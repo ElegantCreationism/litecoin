@@ -1,0 +1,52 @@
+jobs:
+  - name: build-and-push
+    plan:
+      - get: litecoin-repo
+      - task: build-task-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: elegantcreationism/litecoin
+          inputs:
+            - name: litecoin
+          outputs:
+            - name: image
+          run:
+            path: build
+          params:
+            CONTEXT: litecoin/Dockerfiles/litecoin
+      - put: litecoin-image
+        params:
+          image: image/litecoin.tar
+
+#  - name: Deploy
+#    public: true
+#    plan:
+#      - task: deploy
+#        config:
+#          platform: linux
+#          image_resource:
+#            type: docker-image
+#            source: {repository: busybox}
+#          run:
+#            path: echo
+#            args: [hello world]
+
+resources:
+  # The repo with our Dockerfile
+  - name: litecoin-repo
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/elegantcreationism/litecoin.git
+      branch: main
+
+  - name: litecoin-image
+    type: registry-image
+    icon: docker
+    source:
+      repository: elegantcreationism/litecoin
+      tag: "0.18.1"

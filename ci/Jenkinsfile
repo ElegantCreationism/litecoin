@@ -10,6 +10,10 @@ properties([
 
 
 pipeline {
+	options {
+		skipStagesAfterUnstable()
+	}
+
 	environment {
 		git_url: litecoin_repo, branch: params.litecoin_repo_branch
 	}
@@ -19,48 +23,11 @@ pipeline {
 			docker build -t ${params.image_repo_tag}:0.18.1 .
 			docker push ${params.image_repo_tag}:0.18.1
 		"""
-		}
+	}
 
     stage('Deploy') {
 		sh """
 			kubectl --kubeconfig ~/.kube/${params.kubeconfig} apply -f litecoin-statefulset.yaml
 		"""
-		}
-	} catch (ex) {
-		currentBuild.result = 'FAILURE'
-
-		sh """
-			echo FAILURE
-		"""
 	}
-}
-throttle([]) {
-  node() {
-    timestamps {
-      try {
-
-        git_url: litecoin_repo, branch: params.litecoin_repo_branch
-
-        stage('Build') {
-          sh """
-            docker build -t ${params.image_repo_tag}:0.18.1 .
-            docker push ${params.image_repo_tag}:0.18.1
-          """
-        }
-
-        stage('Deploy') {
-          sh """
-            kubectl --kubeconfig ~/.kube/${params.kubeconfig} apply -f litecoin-statefulset.yaml
-          """
-        }
-      } catch (ex) {
-        currentBuild.result = 'FAILURE'
-
-        sh """
-          echo FAILURE
-        """
-      }
-
-    }
-  }
 }
